@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEROÉ - Návrhář náramků</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0c0a09;
+            color: #f5f5f4;
+        }
+        .brand-font {
+            font-family: 'Cinzel', serif;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1c1917;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #44403c;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #78716c;
+        }
+        .glass-panel {
+            background: rgba(28, 25, 23, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .veroe-bg {
+            background-color: #0f0d0b;
+            background-image: 
+                radial-gradient(at 50% 0%, rgba(217, 119, 6, 0.12) 0px, transparent 75%),
+                radial-gradient(at 100% 100%, rgba(225, 29, 72, 0.08) 0px, transparent 50%);
+        }
+        .tab-btn-active {
+            background-color: #d97706;
+            color: #0c0a09;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col veroe-bg text-stone-100 antialiased selection:bg-amber-500 selection:text-stone-950">
+
+    <header class="border-b border-stone-800/80 bg-stone-900/90 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-amber-400 flex items-center justify-center text-stone-950 shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-gem text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="brand-font text-2xl font-black tracking-widest bg-gradient-to-r from-amber-200 via-rose-200 to-amber-400 bg-clip-text text-transparent">
+                        VEROÉ
+                    </h1>
+                    <p class="text-[10px] text-stone-400 font-medium tracking-wider uppercase">Custom Bead Bracelet Designer</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="undo()" id="undoBtn" class="p-2 text-stone-400 hover:text-white bg-stone-800/60 hover:bg-stone-800 rounded-lg border border-stone-700/60 transition disabled:opacity-40" title="Zpět" disabled>
+                    <i class="fa-solid fa-rotate-left text-xs"></i>
+                </button>
+                <button onclick="redo()" id="redoBtn" class="p-2 text-stone-400 hover:text-white bg-stone-800/60 hover:bg-stone-800 rounded-lg border border-stone-700/60 transition disabled:opacity-40" title="Znovu" disabled>
+                    <i class="fa-solid fa-rotate-right text-xs"></i>
+                </button>
+                <button onclick="removeLastItem()" class="px-3 py-1.5 text-xs font-medium text-amber-300 hover:text-amber-100 bg-amber-950/40 hover:bg-amber-900/60 rounded-lg border border-amber-800/50 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-backspace"></i>
+                    <span class="hidden sm:inline">Odebrat poslední prvek</span>
+                </button>
+                <button onclick="clearBracelet()" class="px-3 py-1.5 text-xs font-medium text-rose-300 hover:text-rose-100 bg-rose-950/40 hover:bg-rose-900/60 rounded-lg border border-rose-800/50 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span class="hidden sm:inline">Vymazat vše</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: Canvas Display -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+            
+            <div class="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-between relative overflow-hidden min-h-[460px] sm:min-h-[540px] border border-stone-800 shadow-2xl">
+                
+                <div class="w-full flex justify-between items-center z-10 mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            <i class="fa-solid fa-eye text-[10px] mr-1.5"></i> VEROÉ Živý Náhled
+                        </span>
+                        <span id="elementsCountBadge" class="text-xs text-stone-400 font-semibold">
+                            0 prvků
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 bg-stone-900/80 p-1 rounded-lg border border-stone-800 text-xs">
+                        <button onclick="downloadBraceletImage()" title="Stáhnout obrázek (PNG)" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded transition flex items-center gap-1 font-medium">
+                            <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Uložit návrh</span>
+                        </button>
+                        <button onclick="zoomCanvas(1.1)" title="Přiblížit" class="p-1.5 hover:bg-stone-800 rounded text-stone-300 hover:text-white transition">
+                            <i class="fa-solid fa-magnifying-glass-plus"></i>
+                        </button>
+                        <button onclick="resetZoom()" title="Resetovat pohled" class="p-1.5 hover:bg-stone-800 rounded text-stone-300 hover:text-white transition">
+                            <i class="fa-solid fa-arrows-to-dot"></i>
+                        </button>
+                        <button onclick="zoomCanvas(0.9)" title="Oddálit" class="p-1.5 hover:bg-stone-800 rounded text-stone-300 hover:text-white transition">
+                            <i class="fa-solid fa-magnifying-glass-minus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- HTML5 Canvas Visualizer -->
+                <div class="relative w-full flex-1 flex items-center justify-center my-2 cursor-pointer select-none" id="canvasWrapper">
+                    <canvas id="beadCanvas" class="w-full h-full max-h-[480px] rounded-xl"></canvas>
+                </div>
+
+                <!-- Interactive Selection Bar -->
+                <div class="w-full z-10 bg-stone-900/90 backdrop-blur border border-stone-800/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-400">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-info-circle text-amber-400"></i>
+                        <span id="canvasStatusText">Kliknutím na prvek na provázku jej můžete smazat nebo upravit.</span>
+                    </div>
+
+                    <div id="selectedElementControls" class="hidden flex items-center gap-2 text-stone-200">
+                        <span class="font-medium text-amber-300">Vybraný prvek:</span>
+                        <button onclick="moveSelectedItem(-1)" class="p-1 px-2 bg-stone-800 hover:bg-stone-700 rounded border border-stone-700 transition" title="Posunout vlevo">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button onclick="moveSelectedItem(1)" class="p-1 px-2 bg-stone-800 hover:bg-stone-700 rounded border border-stone-700 transition" title="Posunout vpravo">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <button onclick="deleteSelectedItem()" class="p-1 px-2 bg-rose-950 hover:bg-rose-900 text-rose-300 rounded border border-rose-800 transition" title="Smazat prvek">
+                            <i class="fa-solid fa-trash"></i> Odstranit
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick VEROÉ Presets -->
+            <div class="glass-panel rounded-2xl p-4 border border-stone-800">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2.5 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Rychlé načtení vzorů VEROÉ
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button onclick="applyPreset('alternating')" class="p-3 bg-stone-900/90 hover:bg-stone-800 border border-stone-800 hover:border-amber-500/50 rounded-xl text-left transition group">
+                        <div class="text-[12px] font-bold text-amber-300 group-hover:text-amber-200">Květinka + Korálek</div>
+                        <div class="text-[10px] text-stone-400">Střídání kytičky a zlatého rokajlu</div>
+                    </button>
+                    <button onclick="applyPreset('pastel')" class="p-3 bg-stone-900/90 hover:bg-stone-800 border border-stone-800 hover:border-cyan-500/50 rounded-xl text-left transition group">
+                        <div class="text-[12px] font-bold text-cyan-300 group-hover:text-cyan-200">Jemné perličky</div>
+                        <div class="text-[10px] text-stone-400">Bílá, tyrkys a stříbro</div>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT COLUMN: Builder Controls & Summary -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+
+            <!-- Mode Selector Tabs -->
+            <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-stone-800 flex flex-col gap-4">
+                <div class="flex rounded-xl bg-stone-950 p-1 border border-stone-800 gap-1 text-xs font-semibold">
+                    <button id="tabFlower" onclick="switchAddMode('flower')" class="flex-1 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 tab-btn-active">
+                        <i class="fa-solid fa-asterisk"></i> Přidat celou květinku
+                    </button>
+                    <button id="tabSingle" onclick="switchAddMode('single')" class="flex-1 py-2.5 rounded-lg text-stone-400 hover:text-stone-200 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-circle"></i> Samostatný korálek
+                    </button>
+                </div>
+
+                <!-- MODE A: Add Flower Module Controls -->
+                <div id="flowerModeControls" class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-semibold text-stone-300">Barva lístků kytičky (6 korálků):</label>
+                            <span id="selectedPetalName" class="text-xs font-bold text-amber-400">Červená</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2" id="petalPalette">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-semibold text-stone-300">Barva středu kytičky (1 korálek):</label>
+                            <span id="selectedCenterName" class="text-xs font-bold text-amber-400">Zlatá metalická</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2" id="centerPalette">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <button onclick="addFlowerModule()" class="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 via-rose-500 to-amber-500 bg-size-200 hover:bg-right transition-all duration-300 text-stone-950 font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-base"></i> Navléknout celou květinku
+                    </button>
+                </div>
+
+                <!-- MODE B: Add Single Bead Controls -->
+                <div id="singleModeControls" class="space-y-4 hidden">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-semibold text-stone-300">Barva korálku rokajl:</label>
+                            <span id="selectedSingleName" class="text-xs font-bold text-amber-400">Červená</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2" id="singlePalette">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+
+                    <button onclick="addSingleBead()" class="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-extrabold rounded-xl text-xs uppercase tracking-wider shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-base"></i> Navléknout 1 korálek
+                    </button>
+                </div>
+            </div>
+
+            <!-- Wrist Sizing Control -->
+            <div class="glass-panel rounded-2xl p-4 border border-stone-800 space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-stone-300">
+                        Obvod zápěstí
+                    </label>
+                    <span class="text-sm font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20" id="wristSizeDisplay">
+                        17 cm
+                    </span>
+                </div>
+                <input type="range" id="wristSlider" min="14" max="22" step="0.5" value="17" class="w-full h-2 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                
+                <div class="p-2.5 bg-stone-900/60 rounded-xl border border-stone-800/80 text-[11px] text-stone-300 flex justify-between items-center">
+                    <span>Kapacita VEROÉ náramku:</span>
+                    <strong id="capacityText" class="text-amber-300 font-bold">0 / cca 18 kytiček</strong>
+                </div>
+            </div>
+
+            <!-- Material Breakdown & Summary Card -->
+            <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-stone-800 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-stone-300 mb-3 flex items-center justify-between">
+                        <span><i class="fa-solid fa-list-check text-amber-400 mr-2"></i> Soupis použitého rokajlu VEROÉ</span>
+                        <span class="text-[10px] text-stone-400" id="beadTotalGram">0 ks celkem</span>
+                    </h3>
+
+                    <!-- Stats summary badges -->
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div class="bg-stone-900/90 border border-stone-800 p-2 rounded-xl text-center">
+                            <span class="text-[10px] text-stone-400 uppercase block">Květinek</span>
+                            <span id="flowerCountStat" class="text-sm font-bold text-amber-300">0</span>
+                        </div>
+                        <div class="bg-stone-900/90 border border-stone-800 p-2 rounded-xl text-center">
+                            <span class="text-[10px] text-stone-400 uppercase block">Korálků sólo</span>
+                            <span id="singleCountStat" class="text-sm font-bold text-rose-300">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Itemized List -->
+                    <div class="space-y-1.5 max-h-32 overflow-y-auto pr-1 text-xs" id="materialBreakdown">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-stone-800">
+                    <div class="flex justify-between items-baseline mb-3">
+                        <span class="text-xs font-medium text-stone-300">Celková cena VEROÉ:</span>
+                        <span class="text-2xl font-extrabold text-amber-400" id="totalPriceDisplay">0 Kč</span>
+                    </div>
+
+                    <button onclick="downloadBraceletImage()" class="w-full py-3 px-4 bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-100 font-bold rounded-xl shadow flex items-center justify-center gap-2 text-xs uppercase tracking-wider transition">
+                        <i class="fa-solid fa-file-arrow-down text-amber-400"></i> Stáhnout obrázek návrhu VEROÉ
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        const COLORS = [
+            { id: 'red', name: 'Červená', hex: '#dc2626', darkHex: '#881337' },
+            { id: 'blue', name: 'Modrá', hex: '#2563eb', darkHex: '#1e3a8a' },
+            { id: 'yellow', name: 'Žlutá', hex: '#facc15', darkHex: '#854d0e' },
+            { id: 'green', name: 'Zelená', hex: '#16a34a', darkHex: '#14532d' },
+            { id: 'pink', name: 'Růžová', hex: '#f472b6', darkHex: '#831843' },
+            { id: 'white', name: 'Bílá perleť', hex: '#ffffff', darkHex: '#94a3b8' },
+            { id: 'purple', name: 'Fialová', hex: '#a855f7', darkHex: '#581c87' },
+            { id: 'orange', name: 'Oranžová', hex: '#f97316', darkHex: '#7c2d12' },
+            { id: 'black', name: 'Černá', hex: '#18181b', darkHex: '#000000' },
+            { id: 'cyan', name: 'Tyrkysová', hex: '#06b6d4', darkHex: '#164e63' }
+        ];
+
+        const CENTER_COLORS = [
+            { id: 'gold', name: 'Zlatá metalická', hex: '#eab308', darkHex: '#713f12', metallic: true },
+            { id: 'silver', name: 'Stříbrná metalická', hex: '#e2e8f0', darkHex: '#475569', metallic: true },
+            { id: 'bronze', name: 'Bronzová', hex: '#d97706', darkHex: '#451a03', metallic: true },
+            { id: 'black', name: 'Černá', hex: '#18181b', darkHex: '#000000' },
+            { id: 'white', name: 'Bílá perleť', hex: '#ffffff', darkHex: '#94a3b8' }
+        ];
+
+        // State variables
+        let currentAddMode = 'flower';
+        let selectedPetalColor = COLORS[0]; // Red
+        let selectedCenterColor = CENTER_COLORS[0]; // Gold
+        let selectedSingleColor = COLORS[0]; // Red
+        
+        let wristSize = 17; // cm
+        let braceletItems = [];
+        let selectedItemIndex = -1;
+        let canvasScale = 1.0;
+
+        // History undo/redo
+        let historyStack = [[]];
+        let historyStep = 0;
+
+        // Canvas context setup
+        const canvas = document.getElementById('beadCanvas');
+        const ctx = canvas.getContext('2d');
+        let canvasWidth = 600;
+        let canvasHeight = 480;
+
+        window.addEventListener('load', () => {
+            initResponsiveCanvas();
+            renderPalettes();
+            setupEventListeners();
+            updateSummary();
+            requestAnimationFrame(drawCanvas);
+        });
+
+        window.addEventListener('resize', () => {
+            initResponsiveCanvas();
+        });
+
+        function initResponsiveCanvas() {
+            const wrapper = document.getElementById('canvasWrapper');
+            const rect = wrapper.getBoundingClientRect();
+            
+            const dpr = window.devicePixelRatio || 1;
+            canvasWidth = rect.width || 600;
+            canvasHeight = Math.min(rect.width * 0.8, 480);
+
+            canvas.width = canvasWidth * dpr;
+            canvas.height = canvasHeight * dpr;
+            canvas.style.width = `${canvasWidth}px`;
+            canvas.style.height = `${canvasHeight}px`;
+
+            ctx.scale(dpr, dpr);
+        }
+
+        function switchAddMode(mode) {
+            currentAddMode = mode;
+            const tabFlower = document.getElementById('tabFlower');
+            const tabSingle = document.getElementById('tabSingle');
+            const flowerControls = document.getElementById('flowerModeControls');
+            const singleControls = document.getElementById('singleModeControls');
+
+            if (mode === 'flower') {
+                tabFlower.className = "flex-1 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 tab-btn-active";
+                tabSingle.className = "flex-1 py-2.5 rounded-lg text-stone-400 hover:text-stone-200 transition flex items-center justify-center gap-1.5";
+                flowerControls.classList.remove('hidden');
+                singleControls.classList.add('hidden');
+            } else {
+                tabSingle.className = "flex-1 py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 tab-btn-active";
+                tabFlower.className = "flex-1 py-2.5 rounded-lg text-stone-400 hover:text-stone-200 transition flex items-center justify-center gap-1.5";
+                singleControls.classList.remove('hidden');
+                flowerControls.classList.add('hidden');
+            }
+        }
+
+        function renderPalettes() {
+            // Petal Palette
+            document.getElementById('petalPalette').innerHTML = COLORS.map(c => `
+                <button onclick="selectPetalColor('${c.id}')" class="w-8 h-8 rounded-full border-2 transition transform hover:scale-110 flex items-center justify-center ${selectedPetalColor.id === c.id ? 'border-amber-400 scale-110 shadow-lg shadow-amber-500/20' : 'border-stone-800'}" style="background-color: ${c.hex}" title="${c.name}">
+                    ${selectedPetalColor.id === c.id ? '<i class="fa-solid fa-check text-[10px] ' + (c.id === 'white' || c.id === 'yellow' ? 'text-stone-900' : 'text-white') + '"></i>' : ''}
+                </button>
+            `).join('');
+
+            // Center Palette
+            document.getElementById('centerPalette').innerHTML = CENTER_COLORS.map(c => `
+                <button onclick="selectCenterColor('${c.id}')" class="w-8 h-8 rounded-full border-2 transition transform hover:scale-110 flex items-center justify-center ${selectedCenterColor.id === c.id ? 'border-amber-400 scale-110 shadow-lg shadow-amber-500/20' : 'border-stone-800'}" style="background-color: ${c.hex}" title="${c.name}">
+                    ${selectedCenterColor.id === c.id ? '<i class="fa-solid fa-check text-[10px] ' + (c.id === 'white' || c.id === 'silver' ? 'text-stone-900' : 'text-white') + '"></i>' : ''}
+                </button>
+            `).join('');
+
+            // Single Palette
+            document.getElementById('singlePalette').innerHTML = COLORS.map(c => `
+                <button onclick="selectSingleColor('${c.id}')" class="w-8 h-8 rounded-full border-2 transition transform hover:scale-110 flex items-center justify-center ${selectedSingleColor.id === c.id ? 'border-amber-400 scale-110 shadow-lg shadow-amber-500/20' : 'border-stone-800'}" style="background-color: ${c.hex}" title="${c.name}">
+                    ${selectedSingleColor.id === c.id ? '<i class="fa-solid fa-check text-[10px] ' + (c.id === 'white' || c.id === 'yellow' ? 'text-stone-900' : 'text-white') + '"></i>' : ''}
+                </button>
+            `).join('');
+        }
+
+        function selectPetalColor(id) {
+            selectedPetalColor = COLORS.find(c => c.id === id);
+            document.getElementById('selectedPetalName').innerText = selectedPetalColor.name;
+            renderPalettes();
+        }
+
+        function selectCenterColor(id) {
+            selectedCenterColor = CENTER_COLORS.find(c => c.id === id);
+            document.getElementById('selectedCenterName').innerText = selectedCenterColor.name;
+            renderPalettes();
+        }
+
+        function selectSingleColor(id) {
+            selectedSingleColor = COLORS.find(c => c.id === id);
+            document.getElementById('selectedSingleName').innerText = selectedSingleColor.name;
+            renderPalettes();
+        }
+
+        function saveHistory() {
+            historyStep++;
+            historyStack = historyStack.slice(0, historyStep);
+            historyStack.push(JSON.parse(JSON.stringify(braceletItems)));
+
+            document.getElementById('undoBtn').disabled = historyStep <= 0;
+            document.getElementById('redoBtn').disabled = historyStep >= historyStack.length - 1;
+        }
+
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                braceletItems = JSON.parse(JSON.stringify(historyStack[historyStep]));
+                selectedItemIndex = -1;
+                updateSummary();
+            }
+        }
+
+        function redo() {
+            if (historyStep < historyStack.length - 1) {
+                historyStep++;
+                braceletItems = JSON.parse(JSON.stringify(historyStack[historyStep]));
+                selectedItemIndex = -1;
+                updateSummary();
+            }
+        }
+
+        function addFlowerModule() {
+            braceletItems.push({
+                id: Math.random().toString(36).substr(2, 9),
+                type: 'flower',
+                petalColor: selectedPetalColor,
+                centerColor: selectedCenterColor
+            });
+            selectedItemIndex = braceletItems.length - 1;
+            saveHistory();
+            updateSummary();
+        }
+
+        function addSingleBead() {
+            braceletItems.push({
+                id: Math.random().toString(36).substr(2, 9),
+                type: 'single',
+                color: selectedSingleColor
+            });
+            selectedItemIndex = braceletItems.length - 1;
+            saveHistory();
+            updateSummary();
+        }
+
+        function removeLastItem() {
+            if (braceletItems.length > 0) {
+                braceletItems.pop();
+                selectedItemIndex = -1;
+                saveHistory();
+                updateSummary();
+            }
+        }
+
+        function clearBracelet() {
+            braceletItems = [];
+            selectedItemIndex = -1;
+            saveHistory();
+            updateSummary();
+        }
+
+        function moveSelectedItem(dir) {
+            if (selectedItemIndex < 0 || selectedItemIndex >= braceletItems.length) return;
+            const newIndex = selectedItemIndex + dir;
+            if (newIndex < 0 || newIndex >= braceletItems.length) return;
+
+            const temp = braceletItems[selectedItemIndex];
+            braceletItems[selectedItemIndex] = braceletItems[newIndex];
+            braceletItems[newIndex] = temp;
+            selectedItemIndex = newIndex;
+
+            saveHistory();
+            updateSummary();
+        }
+
+        function deleteSelectedItem() {
+            if (selectedItemIndex < 0 || selectedItemIndex >= braceletItems.length) return;
+            braceletItems.splice(selectedItemIndex, 1);
+            selectedItemIndex = -1;
+            saveHistory();
+            updateSummary();
+        }
+
+        function applyPreset(presetType) {
+            braceletItems = [];
+            
+            const red = COLORS.find(c => c.id === 'red');
+            const blue = COLORS.find(c => c.id === 'blue');
+            const yellow = COLORS.find(c => c.id === 'yellow');
+            const white = COLORS.find(c => c.id === 'white');
+            const cyan = COLORS.find(c => c.id === 'cyan');
+            const gold = CENTER_COLORS.find(c => c.id === 'gold');
+            const silver = CENTER_COLORS.find(c => c.id === 'silver');
+
+            if (presetType === 'alternating') {
+                for (let i = 0; i < 10; i++) {
+                    braceletItems.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        type: 'flower',
+                        petalColor: [red, blue, yellow][i % 3],
+                        centerColor: gold
+                    });
+                    braceletItems.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        type: 'single',
+                        color: gold
+                    });
+                }
+            } else if (presetType === 'pastel') {
+                for (let i = 0; i < 14; i++) {
+                    braceletItems.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        type: 'flower',
+                        petalColor: [white, cyan][i % 2],
+                        centerColor: silver
+                    });
+                }
+            }
+
+            selectedItemIndex = -1;
+            saveHistory();
+            updateSummary();
+        }
+
+        function drawCanvas() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            const centerX = canvasWidth / 2;
+            const centerY = canvasHeight / 2;
+
+            const radiusX = Math.min(canvasWidth * 0.36, 210) * canvasScale;
+            const radiusY = Math.min(canvasHeight * 0.32, 145) * canvasScale;
+
+            const totalItems = braceletItems.length;
+
+            // Draw elastic cord line
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 3;
+            if (totalItems === 0) {
+                ctx.setLineDash([6, 4]);
+            }
+            ctx.stroke();
+
+            // Elastic knot
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - radiusY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#a8a29e';
+            ctx.fill();
+            ctx.restore();
+
+            // Empty state VEROÉ guidance text
+            if (totalItems === 0) {
+                ctx.save();
+                ctx.font = '700 16px "Cinzel", serif';
+                ctx.fillStyle = '#fbbf24';
+                ctx.textAlign = 'center';
+                ctx.fillText('VEROÉ', centerX, centerY - 12);
+
+                ctx.font = '400 12px "Plus Jakarta Sans"';
+                ctx.fillStyle = '#a8a29e';
+                ctx.fillText('Prázdná šňůrka. Přidejte kytičku nebo korálek.', centerX, centerY + 12);
+                ctx.restore();
+                requestAnimationFrame(drawCanvas);
+                return;
+            }
+
+            const estimatedMaxFlowers = Math.round(wristSize * 1.1);
+
+            for (let i = 0; i < totalItems; i++) {
+                const angle = (i / Math.max(estimatedMaxFlowers, totalItems)) * Math.PI * 2 - Math.PI / 2;
+
+                const bx = centerX + radiusX * Math.cos(angle);
+                const by = centerY + radiusY * Math.sin(angle);
+
+                const item = braceletItems[i];
+                item.x = bx;
+                item.y = by;
+
+                const isSelected = (i === selectedItemIndex);
+
+                if (item.type === 'flower') {
+                    drawFlowerModule(ctx, bx, by, item.petalColor, item.centerColor, isSelected);
+                    item.clickRadius = 16;
+                } else {
+                    drawSingleBead(ctx, bx, by, 6.5, item.color, isSelected);
+                    item.clickRadius = 10;
+                }
+            }
+
+            requestAnimationFrame(drawCanvas);
+        }
+
+        function drawFlowerModule(ctx, x, y, petalColor, centerColor, isSelected) {
+            ctx.save();
+
+            const petalRadius = 4.5;
+            const centerRadius = 4.5;
+            const distance = 7.5;
+
+            if (isSelected) {
+                ctx.beginPath();
+                ctx.arc(x, y, 18, 0, Math.PI * 2);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+            }
+
+            // Thread lines inside flower
+            ctx.beginPath();
+            for (let a = 0; a < 6; a++) {
+                const rad = (a * Math.PI) / 3;
+                const px = x + Math.cos(rad) * distance;
+                const py = y + Math.sin(rad) * distance;
+                if (a === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // 6 Outer Petals
+            for (let a = 0; a < 6; a++) {
+                const rad = (a * Math.PI) / 3;
+                const px = x + Math.cos(rad) * distance;
+                const py = y + Math.sin(rad) * distance;
+                drawSingleBead(ctx, px, py, petalRadius, petalColor, false);
+            }
+
+            // Center Bead
+            drawSingleBead(ctx, x, y, centerRadius, centerColor, false);
+
+            ctx.restore();
+        }
+
+        function drawSingleBead(ctx, x, y, radius, colorObj, isSelected) {
+            ctx.save();
+
+            if (isSelected) {
+                ctx.beginPath();
+                ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetY = 1.5;
+
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+
+            const grad = ctx.createRadialGradient(
+                x - radius * 0.35,
+                y - radius * 0.35,
+                radius * 0.1,
+                x, y, radius
+            );
+
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.3, colorObj.hex);
+            grad.addColorStop(1, colorObj.darkHex || '#000000');
+
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Hole
+            ctx.beginPath();
+            ctx.arc(x, y, radius * 0.25, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function setupEventListeners() {
+            const slider = document.getElementById('wristSlider');
+            slider.addEventListener('input', (e) => {
+                wristSize = parseFloat(e.target.value);
+                document.getElementById('wristSizeDisplay').innerText = `${wristSize} cm`;
+                updateSummary();
+            });
+
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                let clickedIndex = -1;
+                for (let i = 0; i < braceletItems.length; i++) {
+                    const item = braceletItems[i];
+                    if (!item.x || !item.y) continue;
+                    const dist = Math.hypot(clickX - item.x, clickY - item.y);
+                    if (dist <= (item.clickRadius || 12)) {
+                        clickedIndex = i;
+                        break;
+                    }
+                }
+
+                selectedItemIndex = clickedIndex;
+                updateSelectedControlUI();
+            });
+        }
+
+        function zoomCanvas(factor) {
+            canvasScale = Math.max(0.6, Math.min(1.8, canvasScale * factor));
+        }
+
+        function resetZoom() {
+            canvasScale = 1.0;
+        }
+
+        function updateSummary() {
+            const totalItems = braceletItems.length;
+            let flowerCount = 0;
+            let singleCount = 0;
+
+            const materialCounts = {};
+
+            braceletItems.forEach(item => {
+                if (item.type === 'flower') {
+                    flowerCount++;
+                    const pName = `${item.petalColor.name} (Lístky)`;
+                    const cName = `${item.centerColor.name} (Střed)`;
+                    materialCounts[pName] = (materialCounts[pName] || 0) + 6;
+                    materialCounts[cName] = (materialCounts[cName] || 0) + 1;
+                } else {
+                    singleCount++;
+                    const sName = `${item.color.name} (Sólo korálek)`;
+                    materialCounts[sName] = (materialCounts[sName] || 0) + 1;
+                }
+            });
+
+            const totalPrice = totalItems === 0 ? 0 : 49 + (flowerCount * 8) + (singleCount * 2);
+
+            document.getElementById('flowerCountStat').innerText = flowerCount;
+            document.getElementById('singleCountStat').innerText = singleCount;
+            document.getElementById('elementsCountBadge').innerText = `${totalItems} prvků`;
+
+            const breakdownContainer = document.getElementById('materialBreakdown');
+            if (totalItems === 0) {
+                breakdownContainer.innerHTML = `<span class="text-stone-500 italic">Šňůrka VEROÉ je zatím prázdná.</span>`;
+            } else {
+                breakdownContainer.innerHTML = Object.entries(materialCounts).map(([name, count]) => `
+                    <div class="flex justify-between items-center text-stone-300">
+                        <span class="truncate">${name}</span>
+                        <span class="font-bold text-amber-300">${count} ks</span>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('totalPriceDisplay').innerText = `${totalPrice} Kč`;
+
+            const maxCap = Math.round(wristSize * 1.1);
+            document.getElementById('capacityText').innerText = `${flowerCount} / cca ${maxCap} kytiček`;
+
+            updateSelectedControlUI();
+        }
+
+        function updateSelectedControlUI() {
+            const controls = document.getElementById('selectedElementControls');
+            const statusText = document.getElementById('canvasStatusText');
+
+            if (selectedItemIndex >= 0 && selectedItemIndex < braceletItems.length) {
+                controls.classList.remove('hidden');
+                statusText.classList.add('hidden');
+            } else {
+                controls.classList.add('hidden');
+                statusText.remove('hidden');
+            }
+        }
+
+        function downloadBraceletImage() {
+            if (braceletItems.length === 0) {
+                alert("Šňůrka je prázdná! Před stažením návrhu vytvořte alespoň jednu kytičku.");
+                return;
+            }
+            const link = document.createElement('a');
+            link.download = 'veroe-navrh-naramku.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
